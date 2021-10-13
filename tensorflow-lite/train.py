@@ -13,12 +13,9 @@ from absl import logging
 logging.set_verbosity(logging.ERROR)
 
 spec = model_spec.get("efficientdet_lite0")
-data_loader = object_detector.DataLoader.from_pascal_voc(images_dir="data/sdd/JPEGImages", annotations_dir="data/sdd/Annotations", label_map=["Pedestrian", "Biker", "Cart", "Skater", "Car", "Bus"])
+data_loader = object_detector.DataLoader.from_pascal_voc(images_dir="data/sdd/JPEGImages", annotations_dir="data/sdd/Annotations", label_map=["Pedestrian", "Biker", "Cart", "Skater", "Car", "Bus"], max_num_images=10000)
+train_data = data_loader
 
-train_data, tmp = data_loader.split(.6)
-val_data, test_data = tmp.split(.5)
+model = object_detector.create(train_data, model_spec=spec, epochs=2, batch_size=16, train_whole_model=True)
 
-model = object_detector.create(train_data, model_spec=spec, epochs=50, batch_size=8, train_whole_model=True, validation_data=val_data)
-
-model.evaluate(test_data)
 model.export(export_dir="models/tf-lite")
