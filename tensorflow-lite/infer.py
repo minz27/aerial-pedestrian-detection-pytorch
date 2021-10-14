@@ -2,8 +2,9 @@ import cv2
 import numpy as np
 from PIL import Image
 import tensorflow as tf
+import matplotlib.pyplot as plt
 
-MODEL_PATH = "models/model.tflite"
+MODEL_PATH = "../models/model.tflite"
 
 label_map = ["Pedestrian", "Biker", "Cart", "Skater", "Car", "Bus"]
 classes = label_map
@@ -14,10 +15,14 @@ classes = label_map
 
 COLORS = np.random.randint(0, 255, size=(len(classes), 3), dtype=np.uint8)
 
-def preprocess_image(image_path, input_size):
+def preprocess_image(image_path, input_size, isVideo = False):
     """Preprocess the input image to feed to the TFLite model"""
-    img = tf.io.read_file(image_path)
-    img = tf.io.decode_image(img, channels=3)
+    if not isVideo:
+        img = tf.io.read_file(image_path)
+        img = tf.io.decode_image(img, channels=3)
+    else:
+        img = image_path
+
     img = tf.image.convert_image_dtype(img, tf.uint8)
     original_image = img
     resized_img = tf.image.resize(img, input_size)
@@ -62,13 +67,16 @@ def detect_objects(interpreter, image, threshold):
     return results
 
 
-def run_odt_and_draw_results(image_path, interpreter, threshold=0.5):
+def run_odt_and_draw_results(image_path, interpreter, threshold=0.5, isVideo=False):
     """Run object detection on the input image and draw the detection results"""
     # Load the input shape required by the model
     _, input_height, input_width, _ = interpreter.get_input_details()[0]['shape']
 
     # Load the input image and preprocess it
-    preprocessed_image, original_image = preprocess_image(image_path, (input_height, input_width))
+    if not isVideo:
+        preprocessed_image, original_image = preprocess_image(image_path, (input_height, input_width))
+    else:
+        preprocessed_image, original_image = preprocess_image(image_path, (input_height, input_width), True)
 
     # Run object detection on the input image
     results = detect_objects(interpreter, preprocessed_image, threshold=threshold)
@@ -100,6 +108,7 @@ def run_odt_and_draw_results(image_path, interpreter, threshold=0.5):
     # Return the final image
     original_uint8 = original_image_np.astype(np.uint8)
     return original_uint8
+    #return original_image_np
 
 
 def inference(model_path: str, path_to_file: str, detection_threshold: str = .3):
@@ -123,5 +132,36 @@ def inference(model_path: str, path_to_file: str, detection_threshold: str = .3)
     img.show()
     img.save(path_to_file)
 
+def inference_video(model_path: str, path_to_file: str, detection_threshold: str = .3):
+    vidcap = cv2.VideoCapture(path_to_file)
+    success,image = vidcap.read()
+    # Load the TFLite model
+    interpreter = tf.lite.Interpreter(model_path=model_path)
+    interpreter.allocate_tensors()
+    
+    success = True
+    count = 0
+    while success:
+        success,image = vidcap.read()
+        detection_result_image = run_odt_and_draw_results(
+        image,
+        interpreter,
+        threshold=detection_threshold, 
+        isVideo = True
+        )
+        print(count)
+        count += 1
+        # Show the detection result
+        #img = Image.fromarray(detection_result_image)
+        
+        #img.show()
+        #opencvImage = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+        cv2.imshow('object detection', detection_result_image)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    video.release()
+    cv2.destroyAllWindows()
+
 if __name__ == "__main__":
-    inference(MODEL_PATH, "C:/Users/Nicolas Kolbenschlag/Desktop/bookstore_video0_10000.jpg")
+    inference_video(MODEL_PATH, "D:\\Projects\\Datasets\\drone\\video\\nexus\\video1\\video.mp4")
