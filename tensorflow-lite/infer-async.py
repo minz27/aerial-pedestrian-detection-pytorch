@@ -1,14 +1,10 @@
 import cv2
 import numpy as np
-from PIL import Image
 import tensorflow as tf
+import threading
 
 label_map = ["Pedestrian", "Biker", "Cart", "Skater", "Car", "Bus"]
 classes = label_map
-
-# classes = ['???'] * len(label_map)
-# for label_id, label_name in label_map.as_dict().items():
-#   classes[label_id-1] = label_name
 
 COLORS = np.random.randint(0, 255, size=(len(classes), 3), dtype=np.uint8)
 
@@ -25,20 +21,17 @@ def preprocess_image(img, input_size):
     resized_img = resized_img[tf.newaxis, :]
     return resized_img, original_image
 
-
 def set_input_tensor(interpreter, image):
     """Set the input tensor."""
     tensor_index = interpreter.get_input_details()[0]['index']
     input_tensor = interpreter.tensor(tensor_index)()[0]
     input_tensor[:, :] = image
 
-
 def get_output_tensor(interpreter, index):
     """Retur the output tensor at the given index."""
     output_details = interpreter.get_output_details()[index]
     tensor = np.squeeze(interpreter.get_tensor(output_details['index']))
     return tensor
-
 
 def detect_objects(interpreter, image, threshold):
     """Returns a list of detection results, each a dictionary of object info."""
@@ -91,8 +84,6 @@ def draw_results(original_image, results):
     original_uint8 = original_image_np.astype(np.uint8)
     return original_uint8
 
-import threading
-
 class CoroutineChannel:
     def __init__(self) -> None:
         self.img = None
@@ -141,6 +132,7 @@ def inference_video(model_path: str, path_to_file: str, detection_threshold: str
 
     channel.stop = True
     t.join()
+
 
 if __name__ == "__main__":
     inference_video("models/model.tflite", "data/video/nexus/video1/video.mp4")

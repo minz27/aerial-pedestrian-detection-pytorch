@@ -10,12 +10,13 @@ logging.set_verbosity(logging.ERROR)
 
 def train():
     spec = model_spec.get("efficientdet_lite0")
-    data_loader = object_detector.DataLoader.from_pascal_voc(images_dir="data/sdd/JPEGImages", annotations_dir="data/sdd/Annotations", label_map=["Pedestrian", "Biker", "Cart", "Skater", "Car", "Bus"], max_num_images=10000)
-    train_data = data_loader
+    
+    labels = ["Pedestrian", "Biker", "Cart", "Skater", "Car", "Bus"]
 
-    model = object_detector.create(train_data, model_spec=spec, epochs=2, batch_size=16, train_whole_model=True)
+    data_loader = object_detector.DataLoader.from_pascal_voc(images_dir="data/sdd/JPEGImages", annotations_dir="data/sdd/Annotations", label_map=labels, max_num_images=None)
 
-    model.export(export_dir="models/tf-lite")
+    model = object_detector.create(data_loader, model_spec=spec, epochs=1, batch_size=64, train_whole_model=False)
+    model.export(export_dir="models/tf-lite-02")
 
 if __name__ == "__main__":
     train()
