@@ -111,7 +111,6 @@ def run_odt(model_path, channel, threshold):
         preprocessed_image, _ = preprocess_image(channel.img, (input_height, input_width))
         results = detect_objects(interpreter, preprocessed_image, threshold=threshold)
         channel.res = results
-        print("Ready")
 
 def inference_video(model_path: str, path_to_file: str, detection_threshold: str = .1):
     vidcap = cv2.VideoCapture(path_to_file)
