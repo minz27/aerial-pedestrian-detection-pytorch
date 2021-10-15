@@ -12,6 +12,7 @@ classes = label_map
 # for label_id, label_name in label_map.as_dict().items():
 #   classes[label_id-1] = label_name
 
+FONT = cv2.FONT_HERSHEY_SIMPLEX
 COLORS = np.random.randint(0, 255, size=(len(classes), 3), dtype=np.uint8)
 
 def load_image_from_file(image_path):
@@ -137,13 +138,21 @@ def run_odt_and_draw_results(image, interpreter, threshold=0.5):
         
         label = f"{classes[class_id]} [{round(float(obj['score']) * 100)}%]"
         
-        cv2.putText(original_image_np, label, (xmin, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+        cv2.putText(original_image_np, label, (xmin, y), FONT, 0.5, color, 2)
 
     # Return the final image
     original_uint8 = original_image_np.astype(np.uint8)
     return original_uint8
     #return original_image_np
 
+def drwa_meta_information(img, num_detections: int = 0):
+    cv2.putText(img, "FlyAI: aerial object detection", (10, 30), FONT, 1., (0,0,255), 4)
+    
+    
+    cv2.putText(img, f"Estimated Height: 17ft.", (10, 80), FONT, .5, (0,0,255), 2)
+    cv2.putText(img, f"Detections: {num_detections}", (10, 100), FONT, .5, (0,0,255), 2)
+    cv2.putText(img, f"Danger situation: no", (10, 120), FONT, .5, (0,0,255), 2)
+    
 
 def inference(model_path: str, path_to_file: str, detection_threshold: str = .3):
     im = Image.open(path_to_file)
@@ -169,22 +178,23 @@ def inference(model_path: str, path_to_file: str, detection_threshold: str = .3)
 def inference_video(model_path: str, path_to_file: str, detection_threshold: str = .3):
     vidcap = cv2.VideoCapture(path_to_file)
     success,image = vidcap.read()
-    # Load the TFLite model
     interpreter = tf.lite.Interpreter(model_path=model_path)
     interpreter.allocate_tensors()
     
-    success, count = True, 0
+    success = True
     while success:
         success, image = vidcap.read()
 
-        if count % 10 == 0:
-            result = run_odt(
-                image,
-                interpreter,
-                threshold=detection_threshold,
-            )
-
-        detection_result_image = draw_results(image, result)
+        # result = run_odt(
+        #     image,
+        #     interpreter,
+        #     threshold=detection_threshold,
+        # )
+        # detection_result_image = draw_results(image, result)
+        
+        detection_result_image = image
+        
+        drwa_meta_information(detection_result_image)#, num_detections=len(result))
 
         cv2.imshow(f"FlyAI: {path_to_file}", detection_result_image)
         if cv2.waitKey(25) & 0xFF == ord("q"):
